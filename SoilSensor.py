@@ -26,25 +26,40 @@ def send_email(status):
     msg['To'] = to_email
     msg['Subject'] = 'Plant Watering Status'
 
-    server = smtplib.SMTP('smtp.qq.com', 587)
-    server.starttls()
-    server.login(from_email, from_password)
-    server.send_message(msg)
-    print("Email sent")
-    server.quit()
+    try:
+        server = smtplib.SMTP('smtp.qq.com', 587)
+        server.starttls()
+        server.login(from_email, from_password)
+        server.send_message(msg)
+        print("Email sent")
+    except Exception as e:
+        print(f"Error sending email: {e}")
+    finally:
+        if 'server' in locals():
+            server.quit()
 
 
 def check_moisture():
-    return GPIO.input(channel)
+    try:
+        return GPIO.input(channel)
+    except Exception as e:
+        print(f"Error reading GPIO: {e}")
+        return None
 
 
 times_to_check = [8, 12, 16, 20]
-while True:
-    current_time = datetime.now()
-    if current_time.hour in times_to_check and current_time.minute == 0:
-        moisture_status = check_moisture()
-        send_email(moisture_status)
-    time.sleep(60)
+try:
+    while True:
+        current_time = datetime.now()
+        if current_time.hour in times_to_check and current_time.minute == 0:
+            moisture_status = check_moisture()
+            if moisture_status is not None:
+                send_email(moisture_status)
+        time.sleep(60)
+except KeyboardInterrupt:
+    print("Program terminated by user")
+finally:
+    GPIO.cleanup()
     
 
 
